@@ -7,17 +7,33 @@ use Braintree;
 
 class PayController extends Controller
 {
-    public function index(Request $request)
+    public function __construct()
     {
-        $gateway = new Braintree\Gateway([
+        $this->gateway = new Braintree\Gateway([
             'environment' => 'sandbox',
-            'merchantId' => 'w9r3mrqrktwqpfjc',
-            'publicKey' => 'nvqpwry7r47d9d2v',
-            'privateKey' => '6a9a0a8659f18ba347df8723f46dc1c5'
+            'merchantId' => env('BRAINTREE_MERCHANTID'),
+            'publicKey' => env('BRAINTREE_PUBLICKEY'),
+            'privateKey' => env('BRAINTREE_PRIVATEKEY')
         ]);
-        $result = $gateway->transaction()->sale([
+    }
+
+    public function index()
+    {
+        $token = $this->gateway->clientToken()->generate();
+        return view('welcome', ['token' => $token]);
+    }
+
+    public function pay(Request $request)
+    {
+        $result = $this->gateway->transaction()->sale([
             'amount' => $request->amount,
             'paymentMethodNonce' => $request->nonce,
+            'creditCard' => [
+                'cardholderName' => $request->holderName,
+            ],
+            'customer' => [
+                'firstName' => $request->cname
+            ],
             'options' => [
               'submitForSettlement' => True
             ]

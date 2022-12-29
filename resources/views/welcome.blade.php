@@ -17,50 +17,102 @@
             body {
                 font-family: 'Nunito', sans-serif;
             }
-            input {
-                border: 1px solid #a0aec0;
-                padding: 3px;
-            }
-            button {
-                padding: 3px;
+            input, #number, #cvv, #exp {
+                background: white;
+                height: 38px;
+                border: 1px solid #CED4DA;
+                padding: .375rem .75rem;
+                margin-bottom: 10px;
             }
         </style>
     </head>
     <body class="antialiased">
         <div class="relative flex items-top justify-center min-h-screen bg-gray-100 dark:bg-gray-900 sm:items-center py-4 sm:pt-0">
             <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
-                @if (session('success'))
-                    <div>{{ session('success') }}</div>
-                @endif
-                @if (session('fail'))
-                    <div>{{ session('fail') }}</div>
-                @endif
                 <form action="{{ route('pay') }}" id="form" method="POST">
                     @csrf
-                    <label for="">Amount</label>
-                    <input type="text" name="amount">
+                    <label for="">Amount</label><br>
+                    <input type="text" name="amount" placeholder="$"><br>
+                    <label for="">Currency</label><br>
+                    <input type="text" name="currency" placeholder="Currency"><br>
+                    <label for="">Customer Full Name</label><br>
+                    <input type="text" name="cname" placeholder="Customer Full Name"><br>
+                    <label for="">Card Holder Name</label><br>
+                    <input type="text" name="holderName" placeholder="Card Holder Name"><br>
+                    <label for="">Card Number</label>
+                    <div name="number" id="number"></div>
+                    <label for="">CVV</label>
+                    <div name="cvv" id="cvv"></div>
+                    <label for="">Exp Date</label>
+                    <div name="exp" id="exp"></div>
                     <input type="text" name="nonce" id="nonce" hidden>
-                    <button type="submit">Submit</button>
+                    <input type="submit" class="button">
+                    @if (session('success'))
+                        <span>{{ session('success') }}</span>
+                    @endif
+                    @if (session('fail'))
+                        <span>{{ session('fail') }}</span>
+                    @endif
                     <div id="dropin-container"></div>
                 </form>
             </div>
         </div>
     </body>
-    <script src="https://js.braintreegateway.com/web/dropin/1.33.7/js/dropin.min.js"></script>
+    <script src="https://js.braintreegateway.com/web/3.88.4/js/client.min.js"></script>
+    <script src="https://js.braintreegateway.com/web/3.88.4/js/hosted-fields.min.js"></script>
     <script type="text/javascript">
-        braintree.dropin.create({
-            authorization: "{{ $token }}",
-            container: document.getElementById('dropin-container'),
-        }, (error, dropinInstance) => {
-            if (error) console.error(error)
-            form.addEventListener('submit', event => {
-                event.preventDefault();
-                dropinInstance.requestPaymentMethod((error, payload) => {
-                if (error) console.error(error)
-                    document.getElementById('nonce').value = payload.nonce;
-                    form.submit()
-                })
+        braintree.client.create({
+            authorization: "{{ $token }}"
+        }, function(err, clientInstance) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        createHostedFields(clientInstance);
+        });
+
+        function createHostedFields(clientInstance) {
+            braintree.hostedFields.create({
+                client: clientInstance,
+                styles: {
+                    '.valid': {
+                        'color': '#8bdda8'
+                    },
+                },
+                fields: {
+                    number: {
+                        selector: '#number',
+                        placeholder: '4111 1111 1111 1111'
+                    },
+                    cvv: {
+                        selector: '#cvv',
+                        placeholder: '123'
+                    },
+                    expirationDate: {
+                        selector: '#exp',
+                        placeholder: 'MM/YYYY'
+                    },
+                }
+            },
+            function (err, hostedFieldsInstance) {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+                var tokenize = function (event) {
+                    event.preventDefault();
+                    hostedFieldsInstance.tokenize(function (err, payload) {
+                        if (err) {
+                            alert('Something went wrong. Check your card details and try again.');
+                            return;
+                        }
+                        // alert('Submit your nonce (' + payload.nonce + ') to your server here!');
+                        document.getElementById('nonce').value = payload.nonce;
+                        form.submit()
+                    });
+                };
+                form.addEventListener('submit', tokenize, false);
             })
-        })
+        }
     </script>
 </html>
