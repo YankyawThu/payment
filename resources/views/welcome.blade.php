@@ -39,7 +39,7 @@
                     <input type="text" name="cname" placeholder="Customer Full Name"><br>
                     <label for="">Card Holder Name</label><br>
                     <input type="text" name="holderName" placeholder="Card Holder Name"><br>
-                    <label for="">Card Number</label>
+                    <label for="">Card Number (<span id="card-brand"></span>)</label>
                     <div name="number" id="number"></div>
                     <label for="">CVV</label>
                     <div name="cvv" id="cvv"></div>
@@ -65,10 +65,10 @@
             authorization: "{{ $token }}"
         }, function(err, clientInstance) {
         if (err) {
-            console.error(err);
+            console.error(err)
             return;
         }
-        createHostedFields(clientInstance);
+        createHostedFields(clientInstance)
         });
 
         function createHostedFields(clientInstance) {
@@ -96,22 +96,31 @@
             },
             function (err, hostedFieldsInstance) {
                 if (err) {
-                    console.error(err);
+                    console.error(err)
                     return;
                 }
+                hostedFieldsInstance.on('cardTypeChange', function(event) {
+                    var cardBrand = document.getElementById('card-brand')
+                    if (event.cards.length === 1) {
+                        var card = event.cards[0]
+                        cardBrand.textContent = card.niceType
+                    } else {
+                        cardBrand.textContent = ''
+                    }
+                })
                 var tokenize = function (event) {
                     event.preventDefault();
                     hostedFieldsInstance.tokenize(function (err, payload) {
                         if (err) {
-                            alert('Something went wrong. Check your card details and try again.');
+                            alert('Something went wrong. Check your card details and try again.')
                             return;
                         }
                         // alert('Submit your nonce (' + payload.nonce + ') to your server here!');
-                        document.getElementById('nonce').value = payload.nonce;
+                        document.getElementById('nonce').value = payload.nonce
                         form.submit()
                     });
                 };
-                form.addEventListener('submit', tokenize, false);
+                form.addEventListener('submit', tokenize, false)
             })
         }
     </script>
