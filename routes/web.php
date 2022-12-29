@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PayController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,5 +15,14 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    $gateway = new Braintree\Gateway([
+        'environment' => 'sandbox',
+        'merchantId' => 'w9r3mrqrktwqpfjc',
+        'publicKey' => 'nvqpwry7r47d9d2v',
+        'privateKey' => '6a9a0a8659f18ba347df8723f46dc1c5'
+    ]);
+    $clientToken = $gateway->clientToken()->generate();
+    return view('welcome', ['token' => $clientToken]);
 });
+
+Route::post('/pay', [PayController::class, 'index'])->name('pay');
