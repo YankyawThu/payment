@@ -32,7 +32,7 @@
                 <form action="{{ route('pay') }}" id="form" method="POST">
                     @csrf
                     <label for="">Amount</label><br>
-                    <input type="text" name="amount" placeholder="$"><br>
+                    <input type="text" name="amount" placeholder="$" id="amount"><br>
                     <label for="">Currency</label><br>
                     <input type="text" name="currency" placeholder="Currency"><br>
                     <label for="">Customer Full Name</label><br>
@@ -53,28 +53,32 @@
                     @if (session('fail'))
                         <span>{{ session('fail') }}</span>
                     @endif
-                    <div id="dropin-container"></div>
                 </form>
+                <div id="paypal-container"></div>
             </div>
         </div>
     </body>
     <script src="https://js.braintreegateway.com/web/3.88.4/js/client.min.js"></script>
     <script src="https://js.braintreegateway.com/web/3.88.4/js/hosted-fields.min.js"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=AQE-mKbyhE5AiK8CzLqJquevTX3Wg2ZxeHR6rLH3jX-7le0Ma3FRc5bSRg4mHOSfZpBV96Ga1PVRnDUv&currency=USD&disable-funding=credit,card"></script>
     <script type="text/javascript">
         braintree.client.create({
             authorization: "{{ $token }}"
         }, function(err, clientInstance) {
         if (err) {
             console.error(err)
-            return;
+            return
         }
         createHostedFields(clientInstance)
-        });
+        })
 
         function createHostedFields(clientInstance) {
             braintree.hostedFields.create({
                 client: clientInstance,
                 styles: {
+                    '.invalid': {
+                        'color': 'red'
+                    },
                     '.valid': {
                         'color': '#8bdda8'
                     },
@@ -90,7 +94,7 @@
                     },
                     expirationDate: {
                         selector: '#exp',
-                        placeholder: 'MM/YYYY'
+                        placeholder: 'MM/YY'
                     },
                 }
             },
@@ -115,13 +119,32 @@
                             alert('Something went wrong. Check your card details and try again.')
                             return;
                         }
-                        // alert('Submit your nonce (' + payload.nonce + ') to your server here!');
                         document.getElementById('nonce').value = payload.nonce
-                        form.submit()
+                        if(document.getElementById('card-brand').textContent != 'American Express') {
+                            form.submit()
+                        }
                     });
                 };
                 form.addEventListener('submit', tokenize, false)
             })
         }
+        paypal.Buttons({
+        createOrder: (data, actions) => {
+            return actions.order.create({
+                purchase_units: [{
+                    amount: {
+                        value: '0.2'
+                    }
+                }]
+            })
+        },
+        onApprove: (data, actions) => {
+            return actions.order.capture().then(function(orderData) {
+                console.log('Capture result', orderData, JSON.stringify(orderData, null, 2));
+                const transaction = orderData.purchase_units[0].payments.captures[0];
+                alert(`Transaction ${transaction.status}: ${transaction.id}\n\nSee console for all available details`);
+            });
+        }
+        }).render('#paypal-container');
     </script>
 </html>

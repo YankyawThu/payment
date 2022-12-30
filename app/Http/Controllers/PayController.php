@@ -3,13 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Braintree;
+use Braintree\Gateway;
 
 class PayController extends Controller
 {
     public function __construct()
     {
-        $this->gateway = new Braintree\Gateway([
+        $this->gateway = new Gateway([
             'environment' => 'sandbox',
             'merchantId' => env('BRAINTREE_MERCHANTID'),
             'publicKey' => env('BRAINTREE_PUBLICKEY'),
